@@ -1,0 +1,616 @@
+﻿@page "/tasks"
+@rendermode InteractiveServer
+
+@using TaskManagement.Models
+@using TaskManagement.Services
+
+@inject TaskService TaskService
+@inject EmployeeService EmployeeService
+
+<h1>Tasks</h1>
+
+<!-- ======================== -->
+<!-- FILTER -->
+<!-- ======================== -->
+<div class="card p-3 mb-4">
+    <h4>Task Filter</h4>
+
+    <form @onsubmit="ApplyFilters"
+          @onsubmit:preventDefault>
+
+        <div class="row">
+
+            <div class="col-md-3 mb-2">
+                <label>Employee</label>
+
+                <select class="form-select"
+                        @bind="filterEmployeeId">
+
+                    <option value="">
+                        All Employees
+                    </option>
+
+                    @if (employees != null)
+                    {
+                        @foreach (var employee in employees)
+                        {
+                            <option value="@employee.Id">
+                                @employee.Name
+                            </option>
+                        }
+                    }
+
+                </select>
+            </div>
+
+            <div class="col-md-3 mb-2">
+                <label>Status</label>
+
+                <select class="form-select"
+                        @bind="filterStatus">
+
+                    <option value="">
+                        All Status
+                    </option>
+
+                    <option value="1">New</option>
+                    <option value="2">In Progress</option>
+                    <option value="3">Completed</option>
+                    <option value="4">Cancelled</option>
+
+                </select>
+            </div>
+
+            <div class="col-md-3 mb-2">
+                <label>Priority</label>
+
+                <select class="form-select"
+                        @bind="filterPriority">
+
+                    <option value="">
+                        All Priority
+                    </option>
+
+                    <option value="1">Low</option>
+                    <option value="2">Normal</option>
+                    <option value="3">High</option>
+                    <option value="4">Critical</option>
+
+                </select>
+            </div>
+
+            <div class="col-md-3 mb-2">
+                <label>Search</label>
+
+                <input class="form-control"
+                       placeholder="Task title..."
+                       @bind="searchText" />
+            </div>
+
+        </div>
+
+        <button type="submit"
+                class="btn btn-primary me-2">
+            Search
+        </button>
+
+        <button type="button"
+                class="btn btn-secondary"
+                @onclick="ClearFilters">
+            Clear
+        </button>
+
+    </form>
+</div>
+
+
+<!-- ======================== -->
+<!-- CREATE TASK -->
+<!-- ======================== -->
+<div class="card p-3 mb-4">
+    <h4>Create Task</h4>
+
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-danger">
+            @message
+        </div>
+    }
+
+    <div class="mb-2">
+        <label>Title</label>
+
+        <input class="form-control"
+               @bind="newTask.Title" />
+    </div>
+
+    <div class="mb-2">
+        <label>Description</label>
+
+        <textarea class="form-control"
+                  @bind="newTask.Description">
+        </textarea>
+    </div>
+
+    <div class="mb-2">
+        <label>Employee</label>
+
+        <select class="form-select"
+                @bind="newTask.EmployeeId">
+
+            <option value="0">
+                -- Employee сонго --
+            </option>
+
+            @if (employees != null)
+            {
+                @foreach (var employee in employees.Where(x => x.IsActive))
+                {
+                    <option value="@employee.Id">
+                        @employee.Name - @employee.Department
+                    </option>
+                }
+            }
+
+        </select>
+    </div>
+
+    <div class="mb-2">
+        <label>Priority</label>
+
+        <select class="form-select"
+                @bind="newTask.Priority">
+
+            <option value="@TaskPriority.Low">
+                Low
+            </option>
+
+            <option value="@TaskPriority.Normal">
+                Normal
+            </option>
+
+            <option value="@TaskPriority.High">
+                High
+            </option>
+
+            <option value="@TaskPriority.Critical">
+                Critical
+            </option>
+
+        </select>
+    </div>
+
+    <div class="mb-2">
+        <label>Start Date</label>
+
+        <input type="date"
+               class="form-control"
+               @bind="newTask.StartDate" />
+    </div>
+
+    <div class="mb-3">
+        <label>Due Date</label>
+
+        <input type="date"
+               class="form-control"
+               @bind="newTask.DueDate" />
+    </div>
+
+    <button class="btn btn-primary"
+            @onclick="CreateTask">
+        Create Task
+    </button>
+</div>
+
+
+<!-- ======================== -->
+<!-- EDIT TASK -->
+<!-- ======================== -->
+@if (editTask != null)
+{
+    <div class="card p-3 mb-4">
+        <h4>Edit Task #@editTask.Id</h4>
+
+        @if (!string.IsNullOrWhiteSpace(editMessage))
+        {
+            <div class="alert alert-danger">
+                @editMessage
+            </div>
+        }
+
+        <div class="mb-2">
+            <label>Title</label>
+
+            <input class="form-control"
+                   @bind="editTask.Title" />
+        </div>
+
+        <div class="mb-2">
+            <label>Description</label>
+
+            <textarea class="form-control"
+                      @bind="editTask.Description">
+            </textarea>
+        </div>
+
+        <div class="mb-2">
+            <label>Employee</label>
+
+            <select class="form-select"
+                    @bind="editTask.EmployeeId">
+
+                @if (employees != null)
+                {
+                    @foreach (var employee in employees.Where(
+                        x => x.IsActive ||
+                             x.Id == editTask.EmployeeId))
+                    {
+                        <option value="@employee.Id">
+                            @employee.Name - @employee.Department
+                        </option>
+                    }
+                }
+
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label>Priority</label>
+
+            <select class="form-select"
+                    @bind="editTask.Priority">
+
+                <option value="@TaskPriority.Low">Low</option>
+                <option value="@TaskPriority.Normal">Normal</option>
+                <option value="@TaskPriority.High">High</option>
+                <option value="@TaskPriority.Critical">Critical</option>
+
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label>Start Date</label>
+
+            <input type="date"
+                   class="form-control"
+                   @bind="editTask.StartDate" />
+        </div>
+
+        <div class="mb-3">
+            <label>Due Date</label>
+
+            <input type="date"
+                   class="form-control"
+                   @bind="editTask.DueDate" />
+        </div>
+
+        <button class="btn btn-success me-2"
+                @onclick="SaveTask">
+            Save
+        </button>
+
+        <button class="btn btn-secondary"
+                @onclick="CancelEdit">
+            Cancel
+        </button>
+    </div>
+}
+
+
+@if (!string.IsNullOrWhiteSpace(statusMessage))
+{
+    <div class="alert alert-danger">
+        @statusMessage
+    </div>
+}
+
+
+<!-- ======================== -->
+<!-- TASK LIST -->
+<!-- ======================== -->
+@if (tasks == null)
+{
+    <p>Loading...</p>
+}
+else if (tasks.Count == 0)
+{
+    <div class="alert alert-info">
+        Task олдсонгүй.
+    </div>
+}
+else
+{
+    <table class="table table-striped">
+
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Title</th>
+                <th>Employee</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Start Date</th>
+                <th>Due Date</th>
+                <th>Completed Date</th>
+                <th>Overdue</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var task in tasks)
+            {
+                <tr>
+                    <td>@task.Id</td>
+
+                    <td>@task.Title</td>
+
+                    <td>@task.EmployeeName</td>
+
+                    <td>@task.PriorityName</td>
+
+                    <td>
+                        <select class="form-select form-select-sm"
+                                value="@task.Status"
+                                @onchange="e => ChangeStatus(
+                                                                task.Id,
+                                                                e.Value?.ToString())">
+
+<option value="1">New</option>
+<option value="2">In Progress</option>
+<option value="3">Completed</option>
+<option value="4">Cancelled</option>
+
+</select>
+                    </td>
+
+                    <td>
+                        @task.StartDate.ToString("yyyy-MM-dd")
+                    </td>
+
+                    <td>
+                        @task.DueDate.ToString("yyyy-MM-dd")
+                    </td>
+
+                    <td>
+                        @if (task.CompletedDate.HasValue)
+                        {
+                            @task.CompletedDate.Value.ToString(
+                                "yyyy-MM-dd HH:mm"
+                            )
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
+                    </td>
+
+                    <td>
+                        @(task.IsOverdue ? "Yes" : "No")
+                    </td>
+
+                    <td>
+                        <button class="btn btn-warning btn-sm me-2"
+                                @onclick="() => StartEdit(task.Id)">
+                            Edit
+                        </button>
+
+                        <button class="btn btn-danger btn-sm"
+                                @onclick="() => DeleteTask(task.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}
+
+
+@code {
+    private List<TaskListItem>? tasks;
+
+    private List<Employee>? employees;
+
+    private string? message;
+
+    private string? editMessage;
+
+    private string? statusMessage;
+
+    private TaskItem? editTask;
+
+
+    // FILTER
+    private int? filterEmployeeId;
+
+    private int? filterStatus;
+
+    private int? filterPriority;
+
+    private string? searchText;
+
+
+    // NEW TASK
+    private TaskItem newTask = new()
+    {
+        Priority = TaskPriority.Normal,
+
+        Status =
+            TaskManagement.Models.TaskStatus.New,
+
+        StartDate = DateTime.Today,
+
+        DueDate = DateTime.Today
+    };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+
+    private async Task LoadData()
+    {
+        tasks =
+            await TaskService.GetTaskListAsync(
+                filterEmployeeId,
+                filterStatus,
+                filterPriority,
+                searchText
+            );
+
+        employees =
+            await EmployeeService.GetEmployeesAsync();
+    }
+
+
+    // FILTER
+    private async Task ApplyFilters()
+    {
+        await LoadData();
+    }
+
+
+    private async Task ClearFilters()
+    {
+        filterEmployeeId = null;
+
+        filterStatus = null;
+
+        filterPriority = null;
+
+        searchText = null;
+
+        await LoadData();
+    }
+
+
+    // CREATE
+    private async Task CreateTask()
+    {
+        message = null;
+
+        try
+        {
+            if (newTask.EmployeeId == 0)
+            {
+                message = "Employee сонгоно уу.";
+                return;
+            }
+
+            await TaskService.CreateTaskAsync(
+                newTask
+            );
+
+            newTask = new TaskItem
+            {
+                Priority = TaskPriority.Normal,
+
+                Status =
+                    TaskManagement.Models.TaskStatus.New,
+
+                StartDate = DateTime.Today,
+
+                DueDate = DateTime.Today
+            };
+
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+        }
+    }
+
+
+    // EDIT
+    private async Task StartEdit(int id)
+    {
+        editMessage = null;
+
+        editTask =
+            await TaskService.GetTaskByIdAsync(id);
+    }
+
+
+    private async Task SaveTask()
+    {
+        if (editTask == null)
+        {
+            return;
+        }
+
+        editMessage = null;
+
+        try
+        {
+            await TaskService.UpdateTaskAsync(
+                editTask
+            );
+
+            editTask = null;
+
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            editMessage = ex.Message;
+        }
+    }
+
+
+    private void CancelEdit()
+    {
+        editTask = null;
+
+        editMessage = null;
+    }
+
+
+    // STATUS
+    private async Task ChangeStatus(
+        int id,
+        string? value)
+    {
+        statusMessage = null;
+
+        if (!int.TryParse(
+            value,
+            out int statusValue))
+        {
+            return;
+        }
+
+        try
+        {
+            var newStatus =
+                (TaskManagement.Models.TaskStatus)
+                statusValue;
+
+            await TaskService.ChangeTaskStatusAsync(
+                id,
+                newStatus
+            );
+
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+
+            await LoadData();
+        }
+    }
+
+
+    // DELETE
+    private async Task DeleteTask(int id)
+    {
+        await TaskService.DeleteTaskAsync(id);
+
+        await LoadData();
+    }
+}
