@@ -6,22 +6,40 @@
 
 @inject EmployeeService EmployeeService
 
-<h1>Employees</h1>
+<div class="d-flex align-items-center gap-3 mb-4">
+    <h1 class="mb-0">Employees</h1>
 
+    <button class="btn btn-success"
+            @onclick="OpenCreateModal">
+        + Add Employee
+    </button>
+</div>
+
+
+<!-- ======================== -->
+<!-- SEARCH -->
+<!-- ======================== -->
 <div class="card p-3 mb-4">
-    <div class="card p-3 mb-4">
-        <h4>Search Employee</h4>
+    <h4>Employee Search</h4>
 
-        <form @onsubmit="SearchEmployees"
-              @onsubmit:preventDefault>
+    <form @onsubmit="SearchEmployees"
+          @onsubmit:preventDefault>
 
-            <div class="input-group">
+        <div class="row align-items-end">
+
+            <div class="col-md-8 mb-2">
+                <label class="form-label">
+                    Search
+                </label>
+
                 <input class="form-control"
-                       placeholder="Name эсвэл Department..."
+                       placeholder="Name or department..."
                        @bind="searchText" />
+            </div>
 
+            <div class="col-md-4 mb-2">
                 <button type="submit"
-                        class="btn btn-primary">
+                        class="btn btn-primary me-2">
                     Search
                 </button>
 
@@ -32,167 +50,483 @@
                 </button>
             </div>
 
-        </form>
-    </div>
-</div>
-<div class="card p-3 mb-4">
-    <h4>Add Employee</h4>
+        </div>
 
-    <div class="mb-2">
-        <label>Name</label>
-        <input class="form-control"
-               @bind="newEmployee.Name" />
-    </div>
-
-    <div class="mb-2">
-        <label>Department</label>
-        <input class="form-control"
-               @bind="newEmployee.Department" />
-    </div>
-
-    <div class="form-check mb-3">
-        <input class="form-check-input"
-               type="checkbox"
-               @bind="newEmployee.IsActive" />
-
-        <label class="form-check-label">
-            Active
-        </label>
-    </div>
-
-    <button class="btn btn-primary"
-            @onclick="AddEmployee">
-        Add Employee
-    </button>
+    </form>
 </div>
 
-@if (editEmployee != null)
+
+<!-- ======================== -->
+<!-- CREATE EMPLOYEE MODAL -->
+<!-- ======================== -->
+@if (showCreateModal)
 {
-    <div class="card p-3 mb-4">
-        <h4>Edit Employee</h4>
+    <div class="modal-backdrop fade show"></div>
 
-        <div class="mb-2">
-            <label>Name</label>
-            <input class="form-control"
-                   @bind="editEmployee.Name" />
+    <div class="modal d-block"
+         tabindex="-1">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Add Employee
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            aria-label="Close"
+                            @onclick="CloseCreateModal">
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    @if (!string.IsNullOrWhiteSpace(message))
+                    {
+                        <div class="alert alert-danger">
+                            @message
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Name
+                        </label>
+
+                        <input class="form-control"
+                               @bind="newEmployee.Name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Department
+                        </label>
+
+                        <input class="form-control"
+                               @bind="newEmployee.Department" />
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="newEmployeeActive"
+                               @bind="newEmployee.IsActive" />
+
+                        <label class="form-check-label"
+                               for="newEmployeeActive">
+                            Active
+                        </label>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            @onclick="CloseCreateModal">
+                        Cancel
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-success"
+                            @onclick="AddEmployee">
+                        Save
+                    </button>
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="mb-2">
-            <label>Department</label>
-            <input class="form-control"
-                   @bind="editEmployee.Department" />
-        </div>
-
-        <div class="form-check mb-3">
-            <input class="form-check-input"
-                   type="checkbox"
-                   @bind="editEmployee.IsActive" />
-
-            <label class="form-check-label">
-                Active
-            </label>
-        </div>
-
-        <button class="btn btn-success me-2"
-                @onclick="UpdateEmployee">
-            Save
-        </button>
-
-        <button class="btn btn-secondary"
-                @onclick="CancelEdit">
-            Cancel
-        </button>
     </div>
 }
 
+
+<!-- ======================== -->
+<!-- EDIT EMPLOYEE MODAL -->
+<!-- ======================== -->
+@if (editEmployee != null)
+{
+    <div class="modal-backdrop fade show"></div>
+
+    <div class="modal d-block"
+         tabindex="-1">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Edit Employee #@editEmployee.Id
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            aria-label="Close"
+                            @onclick="CancelEdit">
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    @if (!string.IsNullOrWhiteSpace(editMessage))
+                    {
+                        <div class="alert alert-danger">
+                            @editMessage
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Name
+                        </label>
+
+                        <input class="form-control"
+                               @bind="editEmployee.Name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Department
+                        </label>
+
+                        <input class="form-control"
+                               @bind="editEmployee.Department" />
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="editEmployeeActive"
+                               @bind="editEmployee.IsActive" />
+
+                        <label class="form-check-label"
+                               for="editEmployeeActive">
+                            Active
+                        </label>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            @onclick="CancelEdit">
+                        Cancel
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-success"
+                            @onclick="UpdateEmployee">
+                        Save
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+
+<!-- ======================== -->
+<!-- DELETE EMPLOYEE MODAL -->
+<!-- ======================== -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop fade show"></div>
+
+    <div class="modal d-block"
+         tabindex="-1">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Delete Employee
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            aria-label="Close"
+                            @onclick="CloseDeleteModal">
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    @if (!string.IsNullOrWhiteSpace(deleteMessage))
+                    {
+                        <div class="alert alert-danger">
+                            @deleteMessage
+                        </div>
+                    }
+
+                    <p class="mb-2">
+                        Are you sure you want to delete this employee?
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(deleteEmployeeName))
+                    {
+                        <strong>@deleteEmployeeName</strong>
+                    }
+
+                    <div class="text-muted mt-2">
+                        This action cannot be undone.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            @onclick="CloseDeleteModal">
+                        Cancel
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-danger"
+                            @onclick="ConfirmDeleteEmployee">
+                        Delete
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+
+<!-- ======================== -->
+<!-- EMPLOYEE LIST -->
+<!-- ======================== -->
 @if (employees == null)
 {
     <p>Loading...</p>
 }
+else if (employees.Count == 0)
+{
+    <div class="alert alert-info">
+        Employee олдсонгүй.
+    </div>
+}
 else
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+    <div class="table-responsive">
 
-        <tbody>
-            @foreach (var employee in employees)
-            {
+        <table class="table table-striped align-middle">
+
+            <thead>
                 <tr>
-                    <td>@employee.Id</td>
-                    <td>@employee.Name</td>
-                    <td>@employee.Department</td>
-                    <td>
-                        @(employee.IsActive
-                            ? "Active"
-                            : "Inactive")
-                    </td>
-
-                    <td>
-                        <button class="btn btn-warning btn-sm"
-                                @onclick="() => StartEdit(employee)">
-                            Edit
-                        </button>
-
-                        @if (employee.IsActive)
-                        {
-                            <button class="btn btn-danger btn-sm ms-2"
-                                    @onclick="() => DeactivateEmployee(employee.Id)">
-                                Deactivate
-                            </button>
-                        }
-                    </td>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Action</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+
+            <tbody>
+
+                @foreach (var employee in employees)
+                {
+                    <tr>
+                        <td>@employee.Id</td>
+
+                        <td>@employee.Name</td>
+
+                        <td>
+                            @(string.IsNullOrWhiteSpace(employee.Department)
+                                ? "-"
+                                : employee.Department)
+                        </td>
+
+                        <td>
+                            @if (employee.IsActive)
+                            {
+                                <span class="badge bg-success">
+                                    Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">
+                                    Inactive
+                                </span>
+                            }
+                        </td>
+
+                        <td>
+                            <button class="btn btn-warning btn-sm me-2"
+                                    @onclick="() => StartEdit(employee)">
+                                Edit
+                            </button>
+
+                            @if (!employee.IsActive)
+                            {
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => OpenDeleteModal(
+                                                                                employee.Id,
+                                                                                employee.Name)">
+Delete
+</button>
+                            }
+                        </td>
+                    </tr>
+                }
+
+            </tbody>
+
+        </table>
+
+    </div>
 }
 
 
 @code {
     private List<Employee>? employees;
+
     private string? searchText;
-    private Employee newEmployee = new()
-    {
-        IsActive = true
-    };
+
+    private string? message;
+
+    private string? editMessage;
+
+    private bool showCreateModal;
+
+    private bool showDeleteModal;
+
+    private int? deleteEmployeeId;
+
+    private string? deleteEmployeeName;
+
+    private string? deleteMessage;
+
+    private Employee newEmployee =
+        CreateEmptyEmployee();
 
     private Employee? editEmployee;
+
 
     protected override async Task OnInitializedAsync()
     {
         await LoadEmployees();
     }
 
+
     private async Task LoadEmployees()
     {
         employees =
-            await EmployeeService.GetEmployeesAsync(searchText);
+            await EmployeeService.GetEmployeesAsync(
+                searchText
+            );
     }
 
-    private async Task AddEmployee()
-    {
-        await EmployeeService.AddEmployeeAsync(
-            newEmployee
-        );
 
-        newEmployee = new Employee
-        {
-            IsActive = true
-        };
+    // SEARCH
+    private async Task SearchEmployees()
+    {
+        await LoadEmployees();
+    }
+
+
+    private async Task ClearSearch()
+    {
+        searchText = null;
 
         await LoadEmployees();
     }
 
+
+    // CREATE
+    private void OpenCreateModal()
+    {
+        message = null;
+
+        editEmployee = null;
+
+        CloseDeleteModal();
+
+        newEmployee =
+            CreateEmptyEmployee();
+
+        showCreateModal = true;
+    }
+
+
+    private void CloseCreateModal()
+    {
+        showCreateModal = false;
+
+        message = null;
+    }
+
+
+    private async Task AddEmployee()
+    {
+        message = null;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(
+                newEmployee.Name))
+            {
+                message =
+                    "Employee name оруулна уу.";
+
+                return;
+            }
+
+            await EmployeeService.AddEmployeeAsync(
+                newEmployee
+            );
+
+            showCreateModal = false;
+
+            newEmployee =
+                CreateEmptyEmployee();
+
+            await LoadEmployees();
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+        }
+    }
+
+
+    private static Employee CreateEmptyEmployee()
+    {
+        return new Employee
+        {
+            IsActive = true
+        };
+    }
+
+
+    // EDIT
     private void StartEdit(Employee employee)
     {
+        editMessage = null;
+
+        showCreateModal = false;
+
+        CloseDeleteModal();
+
         editEmployee = new Employee
         {
             Id = employee.Id,
@@ -202,40 +536,105 @@ else
         };
     }
 
+
     private async Task UpdateEmployee()
     {
         if (editEmployee == null)
+        {
             return;
+        }
 
-        await EmployeeService.UpdateEmployeeAsync(
-            editEmployee
-        );
+        editMessage = null;
 
-        editEmployee = null;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(
+                editEmployee.Name))
+            {
+                editMessage =
+                    "Employee name оруулна уу.";
 
-        await LoadEmployees();
+                return;
+            }
+
+            await EmployeeService.UpdateEmployeeAsync(
+                editEmployee
+            );
+
+            editEmployee = null;
+
+            await LoadEmployees();
+        }
+        catch (Exception ex)
+        {
+            editMessage = ex.Message;
+        }
     }
+
 
     private void CancelEdit()
     {
         editEmployee = null;
+
+        editMessage = null;
     }
 
-    private async Task DeactivateEmployee(int id)
-    {
-        await EmployeeService.DeactivateEmployeeAsync(id);
 
-        await LoadEmployees();
+
+
+    // DELETE
+    private void OpenDeleteModal(
+        int id,
+        string name)
+    {
+        showCreateModal = false;
+
+        editEmployee = null;
+
+        deleteMessage = null;
+
+        deleteEmployeeId = id;
+
+        deleteEmployeeName = name;
+
+        showDeleteModal = true;
     }
-    private async Task SearchEmployees()
+
+
+    private void CloseDeleteModal()
     {
-        await LoadEmployees();
+        showDeleteModal = false;
+
+        deleteEmployeeId = null;
+
+        deleteEmployeeName = null;
+
+        deleteMessage = null;
     }
 
-    private async Task ClearSearch()
-    {
-        searchText = null;
 
-        await LoadEmployees();
+    private async Task ConfirmDeleteEmployee()
+    {
+        if (!deleteEmployeeId.HasValue)
+        {
+            return;
+        }
+
+        deleteMessage = null;
+
+        try
+        {
+            await EmployeeService.DeleteEmployeeAsync(
+                deleteEmployeeId.Value
+            );
+
+            CloseDeleteModal();
+
+            await LoadEmployees();
+        }
+        catch (Exception ex)
+        {
+            deleteMessage = ex.Message;
+        }
     }
 }
