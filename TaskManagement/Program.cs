@@ -35,14 +35,4 @@ app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-app.MapGet("/db-test", async (DatabaseConnection databaseConnection) =>
-{
-    using var connection = databaseConnection.CreateConnection();
-
-    await connection.OpenAsync();
-
-    return "SQL Server connection OK";
-});
-
 app.Run();
