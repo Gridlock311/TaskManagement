@@ -10,6 +10,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<DatabaseConnection>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<TaskService>();
+builder.Services.AddScoped<DashboardService>();
 
 var app = builder.Build();
 
